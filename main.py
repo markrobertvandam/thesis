@@ -58,7 +58,6 @@ def runSVC(X_train,Y_train, feature):
 	elif feature == "embeddings":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
-		print(len(embeddings))
 		vectorizer = features.get_embed(embeddings, pool = 'pool')
 	elif feature == "union":
 		embeddings_pickle = open("vectors-320.pickle","rb")
@@ -66,8 +65,10 @@ def runSVC(X_train,Y_train, feature):
 		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
 		vectorizer = FeatureUnion([('tfidf',tf_idf),('embedding',features.get_embed(embeddings, pool = 'pool'))])
 
-
-	clf = LinearSVC()
+	if feature == "embeddings":
+		clf = LinearSVC(C=1)
+	else:
+		clf = LinearSVC(C=0.1)
 	classifier = Pipeline([('vectorize', vectorizer),('classify', clf)])
 	#return(cross_val_score(classifier, X_train,Y_train, cv=10, scoring='accuracy'))
 	print('Predicting...')
@@ -78,21 +79,22 @@ def runSVC(X_train,Y_train, feature):
 def train_and_predict(X_train,Y_train,X_test,Y_test,feature):
 	print("Training...")
 	if feature == "tfidf":
-		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,5))
-		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])#, stop_words = stop_set)
+		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,3))#, stop_words = stop_set)
+		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
 	elif feature == "embeddings":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
-		vectorizer = features.get_embed(embeddings,pool = 'pool')
+		vectorizer = features.get_embed(embeddings, pool = 'pool')
 	elif feature == "union":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
-		vectorizer = FeatureUnion([('tfidf',TfidfVectorizer(max_features=1000,use_idf = False)),('embedding',features.get_embed(embeddings, pool = 'pool'))])
+		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
+		vectorizer = FeatureUnion([('tfidf',tf_idf),('embedding',features.get_embed(embeddings, pool = 'pool'))])
 
-	clf = LinearSVC()
+	clf = LinearSVC(C=0.1)
 	classifier = Pipeline([('vectorize', vectorizer),('classify', clf)])
-	classifier.fit(X_train,Y_train)
 	print("Predicting...")
+	classifier.fit(X_train,Y_train)
 	return(classifier.predict(X_test))
 
 
