@@ -8,6 +8,7 @@ from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.model_selection import cross_val_score,cross_val_predict
 from statistics import mean
 from sklearn.model_selection import GridSearchCV
+from prettytable import PrettyTable
 import numpy as np
 import random
 import features
@@ -35,20 +36,26 @@ def open_corpus(pickle_path):
 	X_test, Y_test = list(x)[800:], list(y)[800:]
 	return X_train, X_test, Y_train, Y_test
 
+def calculate_f1(precision,recall):
+	return(round((2 * precision * recall) / (precision + recall),3))
 
 def evaluate(Y_guess, Y_test):
 	cm = np.zeros((3, 3), dtype=int)
 	np.add.at(cm, [Y_test, Y_guess], 1)
-	false_p_neutral = cm[1,0]+cm[2,0]
-	false_n_neutral = cm[0,1] + cm[0,2]
-	false_p_favor = cm[0,1]+cm[2,1]
-	false_n_favor = cm[1,0] + cm[1,2]
-	false_p_against = cm[0,2]+cm[1,2]
-	false_n_against = cm[2,0] + cm[2,1]
-	print("Neutral: ", false_p_neutral,false_n_neutral)
-	print("Favor: ", false_p_favor,false_n_favor)
-	print("Against: ", false_p_against,false_n_against)
-	return(cm)
+	precision_neutral = cm[0,0] / (cm[0,0] + cm[1,0]+cm[2,0])
+	recall_neutral = cm[0,0] / (cm[0,0] + cm[0,1] + cm[0,2])
+	precision_favor = cm[1,1] / (cm[1,1] + cm[0,1]+cm[2,1])
+	recall_favor = cm[1,1] / (cm[1,1] + cm[1,0] + cm[1,2])
+	precision_against = cm[2,2] / (cm[2,2] + cm[0,2]+cm[1,2])
+	recall_against = cm[2,2] / (cm[2,2] + cm[2,0] + cm[2,1])
+	p_r_table = PrettyTable(['Class','Precision','Recall', 'F_1'])
+	p_r_table.add_row(['Neutral',round(precision_neutral,3),round(recall_neutral,3), calculate_f1(precision_neutral,recall_neutral)])
+	p_r_table.add_row(['Favor',round(precision_favor,3),round(recall_favor,3), calculate_f1(precision_favor,recall_favor)])
+	p_r_table.add_row(['Against',round(precision_against,3),round(recall_against,3), calculate_f1(precision_against,recall_against)])
+	print(p_r_table, "\n")
+	print("Overall accuracy: ", (cm[0,0] + cm[1,1] + cm[2,2]) / 200)
+	print("Average F1_score: ", round((calculate_f1(precision_favor,recall_favor) + calculate_f1(precision_against,recall_against)) / 2,3))
+	
 
 def runSVC(X_train,Y_train, feature):
 	stop_set = set(stopwords.words("dutch"))
@@ -78,9 +85,10 @@ def runSVC(X_train,Y_train, feature):
 
 def train_and_predict(X_train,Y_train,X_test,Y_test,feature):
 	print("Training...")
+	stop_set = set(stopwords.words("dutch"))
 	if feature == "tfidf":
 		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,3))#, stop_words = stop_set)
-		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
+		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char', stop_words = stop_set))])
 	elif feature == "embeddings":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
@@ -88,10 +96,13 @@ def train_and_predict(X_train,Y_train,X_test,Y_test,feature):
 	elif feature == "union":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
-		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
+		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char', stop_words = stop_set))])
 		vectorizer = FeatureUnion([('tfidf',tf_idf),('embedding',features.get_embed(embeddings, pool = 'pool'))])
 
-	clf = LinearSVC(C=0.1)
+	if feature == "embeddings":
+		clf = LinearSVC(C=1)
+	else:
+		clf = LinearSVC(C=0.1)
 	classifier = Pipeline([('vectorize', vectorizer),('classify', clf)])
 	print("Predicting...")
 	classifier.fit(X_train,Y_train)
@@ -102,10 +113,10 @@ def main():
 	score = 0
 	#try:
 	X_train, X_test, Y_train, Y_test = open_corpus("tweets.pickle")
-	develop_score = runSVC(X_train,Y_train, sys.argv[1])
-	print(mean(develop_score))
-	#Y_guess = train_and_predict(X_train,Y_train,X_test,Y_test,sys.argv[1])
-	#print(evaluate(Y_guess, Y_test))
+	#develop_score = runSVC(X_train,Y_train, sys.argv[1])
+	#print(mean(develop_score))
+	Y_guess = train_and_predict(X_train,Y_train,X_test,Y_test,sys.argv[1])
+	evaluate(Y_guess, Y_test)
 
 	#except UnboundLocalError:
 	#	print("Please use the right format and give the type of vectorizer as argument.")
