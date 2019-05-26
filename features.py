@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 class get_embed():
-	
+	'''
+	class used to create the word embeddings vectorizer
+	'''
 	def __init__(self, word_embeds, pool):
 		self.word_embeds = word_embeds
 		self.pool_method = pool

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# Program that creates a pickle file of the dictionary based on the dataset.
 import pickle
 
 def main():

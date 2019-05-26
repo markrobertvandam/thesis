@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+# Program that filters tweets that are too explicitly in favour or against the pvv. Also has a few dataset specific filters for practical reasons.
 z = 0
 with open("tweets.txt") as f:
 	with open("filtered_tweets.txt","w") as c:

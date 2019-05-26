@@ -18,6 +18,9 @@ import pickle
 import sys
 
 def open_corpus(pickle_path):
+	"""
+	Loads the dataset and creates train and test data.
+	"""
 	print("\n##### Reading corpus...")
 	print("Reading file:", pickle_path)
 	x = list()
@@ -37,9 +40,15 @@ def open_corpus(pickle_path):
 	return X_train, X_test, Y_train, Y_test
 
 def calculate_f1(precision,recall):
+	"""
+	Function to calculate the f1-scores.
+	""" 
 	return(round((2 * precision * recall) / (precision + recall),3))
 
 def evaluate(Y_guess, Y_test):
+	"""
+	Evaluation function
+	""" 
 	cm = np.zeros((3, 3), dtype=int)
 	np.add.at(cm, [Y_test, Y_guess], 1)
 	precision_neutral = cm[0,0] / (cm[0,0] + cm[1,0]+cm[2,0])
@@ -58,6 +67,9 @@ def evaluate(Y_guess, Y_test):
 	
 
 def runSVC(X_train,Y_train, feature):
+	"""
+	Runs the LinearSVC for development with a cross-fold validation.
+	""" 
 	stop_set = set(stopwords.words("dutch"))
 	if feature == "tfidf":
 		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,3))#, stop_words = stop_set)
@@ -84,11 +96,14 @@ def runSVC(X_train,Y_train, feature):
 
 
 def train_and_predict(X_train,Y_train,X_test,Y_test,feature):
+	"""
+	The actual training and prediction of the final classifier.
+	""" 
 	print("Training...")
 	stop_set = set(stopwords.words("dutch"))
 	if feature == "tfidf":
-		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,3))#, stop_words = stop_set)
-		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char', stop_words = stop_set))])
+		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,1))
+		#vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char', stop_words = stop_set))])
 	elif feature == "embeddings":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# Creates a textfile containing all unique tokens occuring in the dataset.
 import string
 import pickle
 
