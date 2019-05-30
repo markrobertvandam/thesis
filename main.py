@@ -73,7 +73,7 @@ def runSVC(X_train,Y_train, feature):
 	stop_set = set(stopwords.words("dutch"))
 	if feature == "tfidf":
 		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,3))#, stop_words = stop_set)
-		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
+		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
 	elif feature == "embeddings":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
@@ -81,7 +81,7 @@ def runSVC(X_train,Y_train, feature):
 	elif feature == "union":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
-		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
+		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
 		vectorizer = FeatureUnion([('tfidf',tf_idf),('embedding',features.get_embed(embeddings, pool = 'pool'))])
 
 	if feature == "embeddings":
@@ -102,8 +102,8 @@ def train_and_predict(X_train,Y_train,X_test,Y_test,feature):
 	print("Training...")
 	stop_set = set(stopwords.words("dutch"))
 	if feature == "tfidf":
-		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,1))
-		#vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char', stop_words = stop_set))])
+		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,3))
+		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (4,6), analyzer = 'char'))])
 	elif feature == "embeddings":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
@@ -111,7 +111,7 @@ def train_and_predict(X_train,Y_train,X_test,Y_test,feature):
 	elif feature == "union":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
-		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char', stop_words = stop_set))])
+		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (4,6), analyzer = 'char'))])
 		vectorizer = FeatureUnion([('tfidf',tf_idf),('embedding',features.get_embed(embeddings, pool = 'pool'))])
 
 	if feature == "embeddings":
