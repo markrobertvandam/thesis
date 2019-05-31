@@ -11,7 +11,6 @@ from prettytable import PrettyTable
 import numpy as np
 import random
 import features
-#from sklearn.base import TransformerMixin
 import pickle
 import sys
 
