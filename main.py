@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC
@@ -13,7 +12,6 @@ import numpy as np
 import random
 import features
 #from sklearn.base import TransformerMixin
-import string
 import pickle
 import sys
 
