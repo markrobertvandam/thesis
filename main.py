@@ -64,14 +64,14 @@ def evaluate(Y_guess, Y_test):
 	print("Average F1_score: ", round((calculate_f1(precision_favor,recall_favor) + calculate_f1(precision_against,recall_against)) / 2,3))
 	return(round((calculate_f1(precision_favor,recall_favor) + calculate_f1(precision_against,recall_against)) / 2,3))
 
-def runSVC(X_train,Y_train, feature):
+def runSVC(X_train,Y_train, feature,N):
 	"""
 	Runs the LinearSVC for development with a cross-fold validation.
 	""" 
 	stop_set = set(stopwords.words("dutch"))
 	if feature == "tfidf":
 		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (4,4),analyzer = 'char')#, stop_words = stop_set)
-		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
+		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=N, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=N, ngram_range = (2,5), analyzer = 'char'))])
 	elif feature == "embeddings":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
@@ -79,7 +79,7 @@ def runSVC(X_train,Y_train, feature):
 	elif feature == "union":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
-		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
+		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=N, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=N, ngram_range = (2,5), analyzer = 'char'))])
 		vectorizer = FeatureUnion([('tfidf',tf_idf),('embedding',features.get_embed(embeddings, pool = 'pool'))])
 
 	if feature == "embeddings":
@@ -125,10 +125,17 @@ def main():
 	score = 0
 	#try:
 	X_train, X_test, Y_train, Y_test = open_corpus("tweets.pickle")
-	develop_score = runSVC(X_train,Y_train, sys.argv[1])
-	print(round(mean(develop_score),3))
-	#Y_guess = train_and_predict(X_train,Y_train,X_test,Y_test,sys.argv[1],2500)
-	#evaluate(Y_guess, Y_test)
+	#result_list = []
+	#for i in range(1000,2950,150):
+	#develop_score = runSVC(X_train,Y_train, sys.argv[1],i)
+	#print(round(mean(develop_score),3))
+	#plt.plot([z for z in range(1000,2950,150)],result_list)
+	#plt.axis([1000,2800,0.46,0.54])
+	#plt.ylabel('Macro F1-scores',fontsize=20)
+	#plt.xlabel('Max features',fontsize=20)
+	#plt.show()
+	Y_guess = train_and_predict(X_train,Y_train,X_test,Y_test,sys.argv[1],2500)
+	evaluate(Y_guess, Y_test)
 
 	#except UnboundLocalError:
 	#	print("Please use the right format and give the type of vectorizer as argument.")
