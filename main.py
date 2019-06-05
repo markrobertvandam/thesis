@@ -122,7 +122,6 @@ def train_and_predict(X_train,Y_train,X_test,Y_test,feature,N):
 
 
 def main():
-	score = 0
 	#try:
 	X_train, X_test, Y_train, Y_test = open_corpus("tweets.pickle")
 	#result_list = []
