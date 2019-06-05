@@ -8,6 +8,7 @@ from sklearn.model_selection import cross_val_score,cross_val_predict
 from statistics import mean
 from sklearn.model_selection import GridSearchCV
 from prettytable import PrettyTable
+import matplotlib.pyplot as plt
 import numpy as np
 import random
 import features
@@ -29,7 +30,7 @@ def open_corpus(pickle_path):
 			y.append(annotation)
 	c = list(zip(x, y))
 	c = sorted(c)
-	random.seed(85)
+	random.seed(90)
 	random.shuffle(c)
 	x,y = zip(*c)
 	X_train, Y_train = list(x)[:800], list(y)[:800]
@@ -61,7 +62,7 @@ def evaluate(Y_guess, Y_test):
 	print(p_r_table, "\n")
 	print("Overall accuracy: ", (cm[0,0] + cm[1,1] + cm[2,2]) / 200)
 	print("Average F1_score: ", round((calculate_f1(precision_favor,recall_favor) + calculate_f1(precision_against,recall_against)) / 2,3))
-	
+	return(round((calculate_f1(precision_favor,recall_favor) + calculate_f1(precision_against,recall_against)) / 2,3))
 
 def runSVC(X_train,Y_train, feature):
 	"""
@@ -69,8 +70,8 @@ def runSVC(X_train,Y_train, feature):
 	""" 
 	stop_set = set(stopwords.words("dutch"))
 	if feature == "tfidf":
-		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,3))#, stop_words = stop_set)
-		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
+		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (4,4),analyzer = 'char')#, stop_words = stop_set)
+		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
 	elif feature == "embeddings":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
@@ -78,7 +79,7 @@ def runSVC(X_train,Y_train, feature):
 	elif feature == "union":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
-		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
+		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
 		vectorizer = FeatureUnion([('tfidf',tf_idf),('embedding',features.get_embed(embeddings, pool = 'pool'))])
 
 	if feature == "embeddings":
@@ -86,13 +87,12 @@ def runSVC(X_train,Y_train, feature):
 	else:
 		clf = LinearSVC(C=0.1)
 	classifier = Pipeline([('vectorize', vectorizer),('classify', clf)])
-	#return(cross_val_score(classifier, X_train,Y_train, cv=10, scoring='accuracy'))
 	print('Predicting...')
 	#return(classifier.predict(X_test))
-	return(cross_val_score(classifier,X_train,Y_train,cv=10))
+	return(cross_val_score(classifier, X_train,Y_train, cv=10, scoring='f1_macro'))
 
 
-def train_and_predict(X_train,Y_train,X_test,Y_test,feature):
+def train_and_predict(X_train,Y_train,X_test,Y_test,feature,N):
 	"""
 	The actual training and prediction of the final classifier.
 	""" 
@@ -100,7 +100,7 @@ def train_and_predict(X_train,Y_train,X_test,Y_test,feature):
 	stop_set = set(stopwords.words("dutch"))
 	if feature == "tfidf":
 		#vectorizer = TfidfVectorizer(max_features=2500, ngram_range = (1,3))
-		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (4,6), analyzer = 'char'))])
+		vectorizer = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=N, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
 	elif feature == "embeddings":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
@@ -108,7 +108,7 @@ def train_and_predict(X_train,Y_train,X_test,Y_test,feature):
 	elif feature == "union":
 		embeddings_pickle = open("vectors-320.pickle","rb")
 		embeddings = pickle.load(embeddings_pickle)
-		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=2500, ngram_range = (1,3), stop_words = stop_set)),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (4,6), analyzer = 'char'))])
+		tf_idf = FeatureUnion([('tfidf_w',TfidfVectorizer(max_features=N, ngram_range = (1,3))),('tfidf_c',TfidfVectorizer(max_features=2500, ngram_range = (2,5), analyzer = 'char'))])
 		vectorizer = FeatureUnion([('tfidf',tf_idf),('embedding',features.get_embed(embeddings, pool = 'pool'))])
 
 	if feature == "embeddings":
@@ -125,10 +125,10 @@ def main():
 	score = 0
 	#try:
 	X_train, X_test, Y_train, Y_test = open_corpus("tweets.pickle")
-	#develop_score = runSVC(X_train,Y_train, sys.argv[1])
-	#print(mean(develop_score))
-	Y_guess = train_and_predict(X_train,Y_train,X_test,Y_test,sys.argv[1])
-	evaluate(Y_guess, Y_test)
+	develop_score = runSVC(X_train,Y_train, sys.argv[1])
+	print(round(mean(develop_score),3))
+	#Y_guess = train_and_predict(X_train,Y_train,X_test,Y_test,sys.argv[1],2500)
+	#evaluate(Y_guess, Y_test)
 
 	#except UnboundLocalError:
 	#	print("Please use the right format and give the type of vectorizer as argument.")
